@@ -135,14 +135,14 @@ class WiseStateManager:
 
     def act_money_transfer(self,
                            wise_account: WiseAccountManager
-                           ) -> tuple[str, int]:
+                           ) -> tuple[str, str, int]:
         default_success_code = 201
         account_balance = wise_account.get_amount_of_money_by_balance_id(
             wise_account._balance_id)
         if account_balance > 0:
-            return wise_account.name, wise_account.send_money_to_jar(
+            return wise_account.name, wise_account.access_token, wise_account.send_money_to_jar(
                 account_balance, wise_account.balance_currency)
-        return wise_account.name, default_success_code
+        return wise_account.name, wise_account.access_token, default_success_code
 
     def _get_account_index_by_access_token(self,
                                            access_token: str,
@@ -153,6 +153,6 @@ class WiseStateManager:
                 return i
         raise Exception("Could not find account with such access token")
 
-    def run(self) -> Iterator[tuple[str, int]]:
+    def run(self) -> Iterator[tuple[str, str, int]]:
         executor = ThreadPoolExecutor(10)
         return executor.map(self.act_money_transfer, self.enabled_accounts)

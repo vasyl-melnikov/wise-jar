@@ -1,9 +1,8 @@
 import smtplib
 import mimetypes
 
-from email import encoders
-from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 
 class MailSender:
@@ -20,25 +19,19 @@ class MailSender:
         self.port = port
         self.username = username
         self.password = password
-        self.smtp_server = smtplib.SMTP_SSL(self.host, self.port)
+        self.smtp_server = smtplib.SMTP(self.host, port=self.port)
+        self.smtp_server.ehlo()
+        self.smtp_server.starttls()
         self.smtp_server.login(self.username, self.password)
 
     def send_mail(self,
                   subject: str,
                   send_to: str,
-                  attachment_name: str = None):
+                  body: str):
         self.message['Subject'] = subject
         self.message.preamble = subject
         self.message['To'] = send_to
-        if attachment_name:
-            maintype, subtype = self.__get_type_of_attachment(attachment_name)
-            with open(attachment_name, 'rb') as stream:
-                attachment_ = MIMEBase(maintype, _subtype=subtype)
-                attachment_.set_payload(stream.read())
-            encoders.encode_base64(attachment_)
-            attachment_.add_header("Content-Disposition", "attachment",
-                                   filename=attachment_name)
-            self.message.attach(attachment_)
+        self.message.attach(MIMEText(body))
         self.smtp_server.sendmail(self.sent_from, send_to,
                                   self.message.as_string())
 

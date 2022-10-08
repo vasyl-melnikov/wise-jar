@@ -21,8 +21,8 @@ middleware = [
 app = FastAPI(middleware=middleware)
 templates = Jinja2Templates(directory="templates")
 wise_state_manager = WiseStateManager()
-mail_sender = MailSender("smtp.gmail.com", 465, "rc.tgbot@gmail.com",
-                         "rc.tgbot@gmail.com", "ulqiwrbiigptlhpa")
+mail_sender = MailSender("smtp-mail.outlook.com", 587, "wiseaccouns351322@outlook.com",
+                         "wiseaccouns351322@outlook.com", "PQ!$#g2Ef@Qt@s3")
 
 
 def flash(request: Request, message: typing.Any, category: str = "") -> None:
@@ -50,20 +50,25 @@ def add_account_to_wise_state_manager():
 @app.on_event('startup')
 @repeat_every(seconds=10)
 def execute_state_manager():
+    default_email_to_send = 'olegysxd@gmail.com'
     results = wise_state_manager.run()
 
-    # for result in results:
-    #     account_name, exec_res = result
-    #     if exec_res == 201:
-    #         continue
-    #     elif exec_res == 401:
-    #         mail_sender.send_mail(
-    #             f'Authentication error with such account: {account_name}',
-    #             'zeedo358@gmail.com')
-    #     else:
-    #         mail_sender.send_mail(
-    #             f'Wise returned {exec_res} status code for such account: {account_name}',
-    #             'zeedo358@gmail.com')
+    for result in results:
+        account_name, access_token, exec_res = result
+        if exec_res == 201:
+            continue
+        elif exec_res == 401:
+            subj = f'Authentication error'
+            msg = f'Authentication error with such account: {account_name}\n' \
+                  f'Please review your account credentials!'
+            mail_sender.send_mail(subj, default_email_to_send, msg)
+            wise_state_manager.disable(access_token)
+        else:
+            subj = f'Wise account error'
+            msg = f'Wise returned {exec_res} status code for such account: {account_name}\n' \
+                  f'Please review your account credentials or check wise account settings'
+            mail_sender.send_mail(subj, default_email_to_send, msg)
+            wise_state_manager.disable(access_token)
 
 
 @app.get("/", response_class=HTMLResponse)
