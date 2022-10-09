@@ -2,18 +2,18 @@ import typing
 
 from typing import Literal
 
-from fastapi import FastAPI, Form, Query, Request
+from fastapi import FastAPI, Form, Query, Request, Response
 from fastapi.templating import Jinja2Templates
 from fastapi_utils.tasks import repeat_every
 from starlette.responses import HTMLResponse
 from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
 
-from db import get_all_wise_accounts, add_wise_account
+from db import get_all_wise_accounts, add_wise_account, \
+    delete_wise_account_by_access_token
 from wise_manager import InvalidAccessTokenError
 from wise_manager import WiseAccountManager, WiseStateManager, CurrencyType
 from email_sender import MailSender
-
 
 middleware = [
     Middleware(SessionMiddleware, secret_key='super-secret')
@@ -21,7 +21,8 @@ middleware = [
 app = FastAPI(middleware=middleware)
 templates = Jinja2Templates(directory="templates")
 wise_state_manager = WiseStateManager()
-mail_sender = MailSender("smtp-mail.outlook.com", 587, "wiseaccouns351322@outlook.com",
+mail_sender = MailSender("smtp-mail.outlook.com", 587,
+                         "wiseaccouns351322@outlook.com",
                          "wiseaccouns351322@outlook.com", "PQ!$#g2Ef@Qt@s3")
 
 
@@ -48,7 +49,7 @@ def add_account_to_wise_state_manager():
 
 
 @app.on_event('startup')
-@repeat_every(seconds=10)
+@repeat_every(seconds=3)
 def execute_state_manager():
     default_email_to_send = 'olegysxd@gmail.com'
     results = wise_state_manager.run()
@@ -89,7 +90,8 @@ def add_new_account(request: Request,
         new_account = WiseAccountManager(name, access_token, balance_currency,
                                          jar_currency)
     except InvalidAccessTokenError:
-        flash(request, "Invalid api token", "The api token is invalid or there is no jar with such currency type or no balance with such currency type!")
+        flash(request, "Invalid api token",
+              "The api token is invalid or there is no jar with such currency type or no balance with such currency type!")
         return templates.TemplateResponse("index.html",
                                           {"request": request,
                                            "disabled_accounts": wise_state_manager.disabled_accounts,
@@ -106,3 +108,11 @@ def add_new_account(request: Request,
 def change_account_status(access_token: str,
                           status: Literal['enable', 'disable'] = Query()):
     getattr(wise_state_manager, status)(access_token)
+    return Response(status_code=200)
+
+
+@app.delete("/{access_token}")
+def change_account_status(access_token: str):
+    wise_state_manager.delete(access_token)
+    delete_wise_account_by_access_token(access_token)
+    return Response(status_code=204)

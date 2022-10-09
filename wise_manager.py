@@ -133,6 +133,16 @@ class WiseStateManager:
             wise_access_token, self.enabled_accounts)
         self.disabled_accounts.append(self.enabled_accounts.pop(account_index))
 
+    def delete(self, wise_access_token: str):
+        try:
+            acc_id = self._get_account_index_by_access_token(wise_access_token,
+                                                             self.enabled_accounts)
+            self.enabled_accounts.pop(acc_id)
+        except Exception:
+            acc_id = self._get_account_index_by_access_token(wise_access_token,
+                                                             self.disabled_accounts)
+            self.disabled_accounts.pop(acc_id)
+
     def act_money_transfer(self,
                            wise_account: WiseAccountManager
                            ) -> tuple[str, str, int]:

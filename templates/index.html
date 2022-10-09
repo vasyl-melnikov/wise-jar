@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <title>Title</title>
     <script>
+        function deleteAccount(btn){
+            httpDelete(btn.value);
+            window.location.href = window.location.href;
+        }
       function change_status(chk_box){
         if (chk_box.checked){
           httpGet(chk_box.id, "enable");
@@ -16,9 +20,15 @@
       function httpGet(access_token, status)
       {
           var xmlHttp = new XMLHttpRequest();
-          xmlHttp.open( "GET", "http://127.0.0.1:8000/" + access_token + "/?status=" + status, false ); // false for synchronous request
+          xmlHttp.open( "GET", window.location.href + access_token + "/?status=" + status, false ); // false for synchronous request
           xmlHttp.send( null );
           return JSON.parse(xmlHttp.responseText);
+      }
+      function httpDelete(access_token)
+      {
+          var xmlHttp = new XMLHttpRequest();
+          xmlHttp.open( "DELETE", window.location.href + access_token, false ); // false for synchronous request
+          xmlHttp.send( null );
       }
       function submitForm(){
         form = document.forms[0]; //assuming only form.
@@ -438,6 +448,58 @@
           color: black;
         }
 
+
+
+        .button-6 {
+          align-items: center;
+          background-color: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.1);
+          border-radius: .25rem;
+          box-shadow: rgba(0, 0, 0, 0.02) 0 1px 3px 0;
+          box-sizing: border-box;
+          color: rgba(0, 0, 0, 0.85);
+          cursor: pointer;
+          display: inline-flex;
+          padding: calc(.875rem - 1px) calc(1.5rem - 1px);
+          font-family: system-ui,-apple-system,system-ui,"Helvetica Neue",Helvetica,Arial,sans-serif;
+          font-size: 16px;
+          font-weight: 600;
+          justify-content: center;
+          line-height: 1.25;
+          margin: 0;
+          position: relative;
+          left: auto;
+          margin-left: 20px;
+          text-decoration: none;
+          transition: all 250ms;
+          user-select: none;
+          -webkit-user-select: none;
+          touch-action: manipulation;
+          vertical-align: baseline;
+          height:25px;
+          width:90px;
+          top: -4px;
+        }
+
+        .button-6:hover,
+        .button-6:focus {
+          border-color: rgba(0, 0, 0, 0.15);
+          box-shadow: rgba(0, 0, 0, 0.1) 0 4px 12px;
+          color: rgba(0, 0, 0, 0.65);
+        }
+
+        .button-6:hover {
+          transform: translateY(-1px);
+        }
+
+        .button-6:active {
+          background-color: #F0F0F1;
+          border-color: rgba(0, 0, 0, 0.15);
+          box-shadow: rgba(0, 0, 0, 0.06) 0 2px 4px;
+          color: rgba(0, 0, 0, 0.65);
+          transform: translateY(0);
+        }
+
     </style>
 </head>
 <body>
@@ -496,6 +558,7 @@
             <input id="{{account.access_token}}" type="checkbox" onchange="change_status(this);">
             <span class="slider round"></span>
           </label>
+            <button class="button-6" role="button" value="{{account.access_token}}" onclick="deleteAccount(this);">Delete</button>
         </div>
       {% endfor %}
       {% for account in enabled_accounts %}
@@ -505,6 +568,7 @@
             <input id="{{account.access_token}}" type="checkbox" checked onchange="change_status(this);">
             <span class="slider round"></span>
           </label>
+            <button class="button-6" role="button" value="{{account.access_token}}" onclick="deleteAccount(this);">Delete</button>
         </div>
       {% endfor %}
     </div>
