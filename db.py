@@ -46,5 +46,8 @@ def get_all_wise_accounts() -> list[WiseAccountManager]:
     wise_accounts = []
     for wise_state in db:
         for name, state in wise_state.items():
-            wise_accounts.append(WiseAccountManager(name, *state))
+            try:
+                wise_accounts.append(WiseAccountManager(name, *state))
+            except Exception:
+                pass
     return wise_accounts
