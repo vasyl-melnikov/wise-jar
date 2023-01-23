@@ -49,14 +49,14 @@ def add_account_to_wise_state_manager():
 
 
 @app.on_event('startup')
-@repeat_every(seconds=3)
+@repeat_every(seconds=1)
 def execute_state_manager():
     default_email_to_send = 'olegysxd@gmail.com'
     results = wise_state_manager.run()
 
     for result in results:
         account_name, access_token, exec_res = result
-        if exec_res == 201:
+        if exec_res == 201 or exec_res is None:
             continue
         elif exec_res == 401:
             subj = f'Authentication error'

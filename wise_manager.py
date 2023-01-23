@@ -1,3 +1,5 @@
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 from typing import Iterator
 
 import requests
@@ -59,7 +61,7 @@ class WiseAccountManager:
 
     def get_all_balances(self) -> list[dict]:
         url = WiseRoutes.get_all_balances.format(profile_id=self._profile_id)
-        all_balances: list[dict] = self._wise_session.get(url).json()
+        all_balances: list[dict] = self._wise_session.get(url, timeout=1).json()
         return all_balances
 
     def get_balance_id_by_currency(self, currency: CurrencyType,
@@ -92,7 +94,7 @@ class WiseAccountManager:
         idempotence_uuid = get_uuid()
         self._wise_session.headers.update(
             {"X-idempotence-uuid": idempotence_uuid})
-        resp = self._wise_session.post(url, json=payload)
+        resp = self._wise_session.post(url, json=payload, timeout=2)
         return resp.status_code
 
     def get_amount_of_money_by_balance_id(self, balance_id: int) -> int:
@@ -147,12 +149,15 @@ class WiseStateManager:
                            wise_account: WiseAccountManager
                            ) -> tuple[str, str, int]:
         default_success_code = 201
-        account_balance = wise_account.get_amount_of_money_by_balance_id(
-            wise_account._balance_id)
-        if account_balance > 0:
-            return wise_account.name, wise_account.access_token, wise_account.send_money_to_jar(
-                account_balance, wise_account.balance_currency)
-        return wise_account.name, wise_account.access_token, default_success_code
+        try:
+            account_balance = wise_account.get_amount_of_money_by_balance_id(
+                wise_account._balance_id)
+            if account_balance > 0:
+                return wise_account.name, wise_account.access_token, wise_account.send_money_to_jar(
+                    account_balance, wise_account.balance_currency)
+            return wise_account.name, wise_account.access_token, default_success_code
+        except Exception:
+            return wise_account.name, wise_account.access_token, default_success_code
 
     def _get_account_index_by_access_token(self,
                                            access_token: str,
@@ -162,7 +167,15 @@ class WiseStateManager:
             if acc.access_token == access_token:
                 return i
         raise Exception("Could not find account with such access token")
+    def temp(self, try_, accs=None):
+        executor = ThreadPoolExecutor(15)
+        return executor.map(self.act_money_transfer, accs)
 
     def run(self) -> Iterator[tuple[str, str, int]]:
-        executor = ThreadPoolExecutor(10)
-        return executor.map(self.act_money_transfer, self.enabled_accounts)
+        temp_fu = partial(self.temp, accs=self.enabled_accounts[:int(len(self.enabled_accounts)/2)])
+        with ProcessPoolExecutor() as executor:
+            process_res = executor.map(temp_fu, [1])
+            process_res = list(process_res)[0]
+        executor = ThreadPoolExecutor(15)
+        cur_process_res = executor.map(self.act_money_transfer, self.enabled_accounts[int(len(self.enabled_accounts)/2):])
+        return list(process_res) + list(cur_process_res)
