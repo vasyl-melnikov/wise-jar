@@ -163,13 +163,13 @@ class WiseStateManager:
                 res = wise_account.name, wise_account.access_token, wise_account.send_money_to_jar(
                     account_balance, wise_account.balance_currency)
                 wise_logger.info(
-                    f"Sent amount of money {account_balance} to jar for {wise_account.access_token} with {wise_account.balance_currency.value} currency | status code {res[3]}")
+                    f"Sent amount of money {account_balance} to jar for {wise_account.access_token} with {wise_account.balance_currency.value} currency | status code {res[2]}")
                 return res
             wise_logger.info(
                 f"No money to send to jar for {wise_account.access_token}")
             return wise_account.name, wise_account.access_token, default_success_code
         except Exception as e:
-            wise_logger.info(f"Error was occurred for {wise_account.access_token} |{type(e)} {e} {e.__traceback__}")
+            wise_logger.info(f"Error was occurred for {wise_account.access_token} |{type(e)} {e}")
             return wise_account.name, wise_account.access_token, default_success_code
 
     def _get_account_index_by_access_token(self,
