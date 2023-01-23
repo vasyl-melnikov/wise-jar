@@ -63,7 +63,7 @@ class WiseAccountManager:
 
     def get_all_balances(self) -> list[dict]:
         url = WiseRoutes.get_all_balances.format(profile_id=self._profile_id)
-        all_balances: list[dict] = self._wise_session.get(url, timeout=1).json()
+        all_balances: list[dict] = self._wise_session.get(url, timeout=3).json()
         return all_balances
 
     def get_balance_id_by_currency(self, currency: CurrencyType,
@@ -96,7 +96,7 @@ class WiseAccountManager:
         idempotence_uuid = get_uuid()
         self._wise_session.headers.update(
             {"X-idempotence-uuid": idempotence_uuid})
-        resp = self._wise_session.post(url, json=payload, timeout=2)
+        resp = self._wise_session.post(url, json=payload, timeout=3)
         return resp.status_code
 
     def get_amount_of_money_by_balance_id(self, balance_id: int) -> int:
@@ -168,8 +168,8 @@ class WiseStateManager:
             wise_logger.info(
                 f"No money to send to jar for {wise_account.access_token}")
             return wise_account.name, wise_account.access_token, default_success_code
-        except Exception:
-            wise_logger.info(f"Timeout error was occurred for {wise_account.access_token}")
+        except Exception as e:
+            wise_logger.info(f"Error was occurred for {wise_account.access_token} |{type(e)} {e} {e.__traceback__}")
             return wise_account.name, wise_account.access_token, default_success_code
 
     def _get_account_index_by_access_token(self,
