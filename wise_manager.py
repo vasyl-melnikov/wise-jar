@@ -159,11 +159,11 @@ class WiseStateManager:
                 f"Got amount of money for {wise_account.access_token}")
             if account_balance > 0:
                 wise_logger.info(
-                    f"Sending amount of money {account_balance} to jar")
+                    f"Sending amount of money {account_balance} to jar for {wise_account.access_token} with {wise_account.balance_currency.value} currency")
                 res = wise_account.name, wise_account.access_token, wise_account.send_money_to_jar(
                     account_balance, wise_account.balance_currency)
                 wise_logger.info(
-                    f"Sent amount of money {account_balance} to jar")
+                    f"Sent amount of money {account_balance} to jar for {wise_account.access_token} with {wise_account.balance_currency.value} currency | status code {res[3]}")
                 return res
             wise_logger.info(
                 f"No money to send to jar for {wise_account.access_token}")
