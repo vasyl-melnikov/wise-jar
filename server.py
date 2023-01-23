@@ -1,6 +1,8 @@
+import logging
 import typing
 
 from typing import Literal
+from logging.config import dictConfig
 
 from fastapi import FastAPI, Form, Query, Request, Response
 from fastapi.templating import Jinja2Templates
@@ -14,6 +16,7 @@ from db import get_all_wise_accounts, add_wise_account, \
 from wise_manager import InvalidAccessTokenError
 from wise_manager import WiseAccountManager, WiseStateManager, CurrencyType
 from email_sender import MailSender
+from logger_config import log_config
 
 middleware = [
     Middleware(SessionMiddleware, secret_key='super-secret')
@@ -24,6 +27,8 @@ wise_state_manager = WiseStateManager()
 mail_sender = MailSender("smtp-mail.outlook.com", 587,
                          "wiseaccouns351322@outlook.com",
                          "wiseaccouns351322@outlook.com", "PQ!$#g2Ef@Qt@s3")
+dictConfig(log_config)
+main_logger = logging.getLogger("main")
 
 
 def flash(request: Request, message: typing.Any, category: str = "") -> None:
@@ -51,8 +56,10 @@ def add_account_to_wise_state_manager():
 @app.on_event('startup')
 @repeat_every(seconds=1)
 def execute_state_manager():
+    main_logger.info("Starting background job!")
     default_email_to_send = 'olegysxd@gmail.com'
-    results = wise_state_manager.run()
+    results = list(wise_state_manager.run())
+    main_logger.info(f"Finished processing {len(results)} results")
 
     for result in results:
         account_name, access_token, exec_res = result
@@ -70,6 +77,7 @@ def execute_state_manager():
                   f'Please review your account credentials or check wise account settings'
             mail_sender.send_mail(subj, default_email_to_send, msg)
             wise_state_manager.disable(access_token)
+    main_logger.info(f"Finished background task")
 
 
 @app.get("/", response_class=HTMLResponse)

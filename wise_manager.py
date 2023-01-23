@@ -1,13 +1,15 @@
-from concurrent.futures import ProcessPoolExecutor
-from functools import partial
+import logging
+import enum
+
 from typing import Iterator
 
 import requests
-import enum
 
 from concurrent.futures import ThreadPoolExecutor
 
 UUID_GENERATOR_ROUTE = "https://www.uuidgenerator.net/api/guid"
+
+wise_logger = logging.getLogger("wise-manager")
 
 
 def get_uuid() -> str:
@@ -150,13 +152,24 @@ class WiseStateManager:
                            ) -> tuple[str, str, int]:
         default_success_code = 201
         try:
+            wise_logger.info(f"Getting amount of money for {wise_account.access_token}")
             account_balance = wise_account.get_amount_of_money_by_balance_id(
                 wise_account._balance_id)
+            wise_logger.info(
+                f"Got amount of money for {wise_account.access_token}")
             if account_balance > 0:
-                return wise_account.name, wise_account.access_token, wise_account.send_money_to_jar(
+                wise_logger.info(
+                    f"Sending amount of money {account_balance} to jar")
+                res = wise_account.name, wise_account.access_token, wise_account.send_money_to_jar(
                     account_balance, wise_account.balance_currency)
+                wise_logger.info(
+                    f"Sent amount of money {account_balance} to jar")
+                return res
+            wise_logger.info(
+                f"No money to send to jar for {wise_account.access_token}")
             return wise_account.name, wise_account.access_token, default_success_code
         except Exception:
+            wise_logger.info(f"Timeout error was occurred for {wise_account.access_token}")
             return wise_account.name, wise_account.access_token, default_success_code
 
     def _get_account_index_by_access_token(self,
@@ -167,15 +180,7 @@ class WiseStateManager:
             if acc.access_token == access_token:
                 return i
         raise Exception("Could not find account with such access token")
-    def temp(self, try_, accs=None):
-        executor = ThreadPoolExecutor(15)
-        return executor.map(self.act_money_transfer, accs)
 
     def run(self) -> Iterator[tuple[str, str, int]]:
-        temp_fu = partial(self.temp, accs=self.enabled_accounts[:int(len(self.enabled_accounts)/2)])
-        with ProcessPoolExecutor() as executor:
-            process_res = executor.map(temp_fu, [1])
-            process_res = list(process_res)[0]
         executor = ThreadPoolExecutor(15)
-        cur_process_res = executor.map(self.act_money_transfer, self.enabled_accounts[int(len(self.enabled_accounts)/2):])
-        return list(process_res) + list(cur_process_res)
+        return executor.map(self.act_money_transfer, self.enabled_accounts)
